@@ -5,21 +5,38 @@ using namespace std;
 class Bucket {
     const long unsigned int size;
     int depth;
-    vector<pair<const int, const string>> values;
+    vector<pair<const int, string>> values;
 
   public:
     Bucket(const int depth, const int size);
     bool insert(const int key, const string value);
     int getDepth() { return this->depth; };
-    vector<pair<const int, const string>> getValues() { return this->values; };
-    bool isDuplicateKey(const int key);
+    vector<pair<const int, string>> getValues() { return this->values; };
+    int isDuplicateKey(const int key);
 };
 
 Bucket::Bucket(const int depth, const int size) : size(size), depth(depth) {}
 
+int Bucket::isDuplicateKey(const int key) {
+    int counter = 0;
+    for (pair<const int, const string> p : this->values) {
+        if (p.first == key)
+            return counter;
+        counter++;
+    }
+
+    return -1;
+}
+
 bool Bucket::insert(const int key, const string value) {
     cerr << "(b insert) key = " << key << ' ';
     cerr << "size = " << this->values.size() << '\n';
+
+    if (isDuplicateKey(key) >= 0) {
+        this->values[isDuplicateKey(key)].second = value;
+        return true;
+    }
+
     if (this->values.size() < size) {
         this->values.push_back({key, value});
         return true;
@@ -74,7 +91,7 @@ void Directory::split(const int bucket_no) {
 }
 
 void Directory::grow() {
-    cerr << "(d_grow) to = " << this->global_depth+1 << '\n';
+    cerr << "(d_grow) to = " << this->global_depth + 1 << '\n';
     vector<Bucket *> temp = this->buckets;
     this->buckets.insert(buckets.end(), temp.begin(), temp.end());
     this->global_depth++;
@@ -108,6 +125,7 @@ int main() {
     d.insert(3, "string value");
     d.insert(1, "something");
     d.insert(7, "soso");
+    d.insert(3, "something else");
     cout << endl;
     return 0;
 }
