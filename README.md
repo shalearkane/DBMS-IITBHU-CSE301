@@ -10,5 +10,5 @@ The code here takes a lot of inspiration from this [repo](https://github.com/nit
 ## More to come
 More codes and updates will be published as soon as possible.
 
-## Star and Share  🥳
+## Star, Watch and Share  🥳
 Open random pull requests and let me know if I should add this repo to hacktoberfest and mark your PRs as Hacktoberfest accepted 👀
