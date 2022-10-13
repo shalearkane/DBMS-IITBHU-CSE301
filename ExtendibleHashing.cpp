@@ -12,6 +12,7 @@ class Bucket {
     bool insert(const int key, const string value);
     int getDepth() { return this->depth; };
     vector<pair<const int, const string>> getValues() { return this->values; };
+    bool isDuplicateKey(const int key);
 };
 
 Bucket::Bucket(const int depth, const int size) : size(size), depth(depth) {}
@@ -58,12 +59,13 @@ void Directory::split(const int bucket_no) {
     cerr << "(d_split) " << bucket_no << '\n';
     const int b_pos1 = bucket_no % (this->getBucketCount() / 2);
     const int b_pos2 = b_pos1 + (this->getBucketCount() / 2);
+
     Bucket *b = this->buckets[bucket_no];
-    vector<pair<const int, const string>> v = b->getValues();
 
     this->buckets[b_pos1] = new Bucket(b->getDepth() + 1, this->bucket_size);
     this->buckets[b_pos2] = new Bucket(b->getDepth() + 1, this->bucket_size);
-    for (pair<const int, const string> p : v) {
+
+    for (pair<const int, const string> p : b->getValues()) {
         this->insert(p.first, p.second);
     }
 
