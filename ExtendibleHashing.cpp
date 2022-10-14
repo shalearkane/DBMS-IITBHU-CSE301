@@ -2,22 +2,27 @@
 #include <utility>
 using namespace std;
 
+#define BIGPRIME 99991
+
 class Bucket {
     const long unsigned int size;
     int depth;
-    vector<pair<const int, string>> values;
+    list<pair<const int, string>> values;
+    bool updateKey(const int key, const string value);
+    string getValueFromKey(const int key);
 
   public:
     Bucket(const int depth, const int size);
     bool insert(const int key, const string value);
     int getDepth() { return this->depth; };
-    vector<pair<const int, string>> getValues() { return this->values; };
-    int isDuplicateKey(const int key);
+    list<pair<const int, string>> getValues() { return this->values; };
+    int findKey(const int key);
+    bool remove(const int key);
 };
 
 Bucket::Bucket(const int depth, const int size) : size(size), depth(depth) {}
 
-int Bucket::isDuplicateKey(const int key) {
+int Bucket::findKey(const int key) {
     int counter = 0;
     for (pair<const int, const string> p : this->values) {
         if (p.first == key)
@@ -28,37 +33,68 @@ int Bucket::isDuplicateKey(const int key) {
     return -1;
 }
 
+string Bucket::getValueFromKey(const int key) {
+    for (pair<const int, const string> p : this->values) {
+        if (p.first == key)
+            return p.second;
+    }
+
+    return "\0";
+}
+
+bool Bucket::updateKey(const int key, const string value) {
+    for (pair<const int, string> &p : this->values) {
+        if (p.first == key) {
+            p.second = value;
+            return true;
+        }
+    }
+
+    return false;
+}
+
 bool Bucket::insert(const int key, const string value) {
     cerr << "(b insert) key = " << key << ' ';
     cerr << "size = " << this->values.size() << '\n';
 
-    if (isDuplicateKey(key) >= 0) {
-        this->values[isDuplicateKey(key)].second = value;
+    if (findKey(key) >= 0) {
+        this->updateKey(key, value);
         return true;
     }
 
     if (this->values.size() < size) {
-        this->values.push_back({key, value});
+        this->values.emplace_back(make_pair(key, value));
         return true;
     } else
         return false;
+}
+
+bool Bucket::remove(const int key) {
+    if (findKey(key) >= 0) {
+        this->values.remove({key, getValueFromKey(key)});
+        return true;
+    } else {
+        return false;
+    }
 }
 
 class Directory {
     const long unsigned int bucket_size;
     int global_depth;
     vector<Bucket *> buckets;
-    int hashing_func(const int n);
+    int hashing_func(const int n) { return n % BIGPRIME; };
     void grow();
     void split(int bucket_no);
-
-  public:
-    Directory(const int depth, const int bucket_size);
-    void insert(const int key, const string value);
     int getBucketCount() { return 1 << global_depth; };
     int getPosFromKey(const int key) {
         return this->hashing_func(key) % this->getBucketCount();
     }
+
+  public:
+    Directory(const int depth, const int bucket_size);
+    void insert(const int key, const string value);
+    void remove(const int key);
+
     void print();
 };
 
@@ -67,8 +103,6 @@ Directory::Directory(const int depth, const int bucket_size)
     this->buckets = vector<Bucket *>(this->getBucketCount(),
                                      new Bucket(depth, bucket_size));
 }
-
-int Directory::hashing_func(const int n) { return n % 99991; }
 
 void Directory::split(const int bucket_no) {
     // get the bucket pos pointing to the same
@@ -92,7 +126,7 @@ void Directory::split(const int bucket_no) {
 
 void Directory::grow() {
     cerr << "(d_grow) to = " << this->global_depth + 1 << '\n';
-    vector<Bucket *> temp = this->buckets;
+    const vector<Bucket *> temp = this->buckets;
     this->buckets.insert(buckets.end(), temp.begin(), temp.end());
     this->global_depth++;
 }
@@ -118,6 +152,13 @@ void Directory::insert(const int key, const string value) {
     }
 }
 
+void Directory::remove(const int key) {
+    const int pos = this->getPosFromKey(key);
+    if(this->buckets[pos]->remove(key)) {
+        cerr << "(d_remove) successfully removed\n";
+    }
+}
+
 int main() {
     cout << "Extendible Hashing\n";
     // depth 1 and bucket size 2
@@ -126,6 +167,7 @@ int main() {
     d.insert(1, "something");
     d.insert(7, "soso");
     d.insert(3, "something else");
+    d.remove(3);
     cout << endl;
     return 0;
 }
