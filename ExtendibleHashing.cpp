@@ -32,8 +32,7 @@ class Bucket {
 };
 
 Bucket::Bucket(const int depth, const int size) : size(size), depth(depth) {
-    assert(this->depth >= 1);
-    assert(this->size >= 1);
+    assert(this->depth > 0 && this->size > 0);
 }
 
 int Bucket::findKey(const int key) {
@@ -115,6 +114,8 @@ class Directory {
 
 Directory::Directory(const int depth, const int bucket_size)
     : bucket_size(bucket_size), global_depth(depth) {
+    assert(this->global_depth > 0 && this->bucket_size > 0);
+
     this->buckets = vector<Bucket *>(this->getBucketCount(),
                                      new Bucket(depth, bucket_size));
 }
