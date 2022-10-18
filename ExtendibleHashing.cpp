@@ -1,4 +1,6 @@
 #include <bits/stdc++.h>
+#include <cassert>
+#include <string>
 #include <utility>
 using namespace std;
 
@@ -15,12 +17,24 @@ class Bucket {
     Bucket(const int depth, const int size);
     bool insert(const int key, const string value);
     int getDepth() { return this->depth; };
+    bool mergeFromBucket(Bucket *b) {
+        for (pair<int, string> p : b->getValues()) {
+            if (!this->insert(p.first, p.second))
+                return false;
+        }
+        // reduce depth
+        this->depth--;
+        return true;
+    };
     list<pair<const int, string>> getValues() { return this->values; };
     int findKey(const int key);
     bool remove(const int key);
 };
 
-Bucket::Bucket(const int depth, const int size) : size(size), depth(depth) {}
+Bucket::Bucket(const int depth, const int size) : size(size), depth(depth) {
+    assert(this->depth >= 1);
+    assert(this->size >= 1);
+}
 
 int Bucket::findKey(const int key) {
     int counter = 0;
@@ -89,6 +103,7 @@ class Directory {
     int getPosFromKey(const int key) {
         return this->hashing_func(key) % this->getBucketCount();
     }
+    void join();
 
   public:
     Directory(const int depth, const int bucket_size);
@@ -102,6 +117,24 @@ Directory::Directory(const int depth, const int bucket_size)
     : bucket_size(bucket_size), global_depth(depth) {
     this->buckets = vector<Bucket *>(this->getBucketCount(),
                                      new Bucket(depth, bucket_size));
+}
+
+void Directory::join() {
+    // try to join all buckets
+    const int half_count = this->getBucketCount() / 2;
+    for (int i = 0; i < half_count; i++) {
+        // check if two buckets can be merged
+        if (this->buckets[i] != this->buckets[i + half_count] &&
+            (this->buckets[i]->getValues().size() +
+                 this->buckets[i + half_count]->getValues().size() <=
+             this->bucket_size)) {
+            cout << "(d_join) " << i << " " << i + half_count << '\n';
+            // merge the second bucket into first
+            this->buckets[i]->mergeFromBucket(this->buckets[i + half_count]);
+            delete this->buckets[i + half_count];
+            this->buckets[i + half_count] = this->buckets[i];
+        }
+    }
 }
 
 void Directory::split(const int bucket_no) {
@@ -154,9 +187,10 @@ void Directory::insert(const int key, const string value) {
 
 void Directory::remove(const int key) {
     const int pos = this->getPosFromKey(key);
-    if(this->buckets[pos]->remove(key)) {
-        cerr << "(d_remove) successfully removed\n";
+    if (this->buckets[pos]->remove(key)) {
+        cerr << "(d_remove) " << key << '\n';
     }
+    this->join();
 }
 
 int main() {
