@@ -13,9 +13,11 @@ int call_depth = 0;
 void dbg_print(string cls, string func, string msg) {
     if (!DEBUG)
         return;
-    for (int i = 0; i < call_depth; i++) {
-        cerr << '-';
+    for (int i = 0; i < call_depth - 1; i++) {
+        cerr << "  ";
     }
+    if (call_depth - 1)
+        cerr << "└─";
     cerr << cls << "\t" << func << " : " << msg << '\n';
 }
 
@@ -113,6 +115,7 @@ bool Bucket::insert(const int key, const string value) {
 
 bool Bucket::remove(const int key) {
     // DEBUG
+    call_depth++;
     const string msg = "key = " + to_string(key);
     dbg_print(this->cls, "remove", msg);
     // DEBUG
@@ -175,6 +178,13 @@ void Directory::join() {
             (this->buckets[i]->getValues().size() +
                  this->buckets[i + half_count]->getValues().size() <=
              this->bucket_size)) {
+            // DEBUG
+            call_depth++;
+            const string msg =
+                "merge " + to_string(i + half_count) + " to " + to_string(i);
+            dbg_print(this->cls, "join", msg);
+            call_depth--;
+            // DEBUG
 
             // merge the second bucket into first
             this->buckets[i]->mergeFromBucket(this->buckets[i + half_count]);
@@ -187,6 +197,11 @@ void Directory::join() {
 }
 
 void Directory::split(const int bucket_index) {
+    // DEBUG
+    call_depth++;
+    const string msg = "";
+    dbg_print(this->cls, "split", msg);
+    // DEBUG
     // bucket index provides oooxxx
     // where xxx is determined parts of hash
     // ooo is undetermined
@@ -225,6 +240,8 @@ void Directory::split(const int bucket_index) {
     }
 
     delete b;
+
+    call_depth--;
 }
 
 void Directory::grow() {
@@ -234,6 +251,11 @@ void Directory::grow() {
 }
 
 void Directory::insert(const int key, const string value) {
+    // DEBUG
+    call_depth++;
+    const string msg = "key = " + to_string(key) + ", value = " + value;
+    dbg_print(this->cls, "insert", msg);
+    // DEBUG
 
     const int pos = this->getPosFromKey(key);
 
@@ -249,14 +271,24 @@ void Directory::insert(const int key, const string value) {
 
         this->insert(key, value);
     }
+
+    call_depth--;
 }
 
 void Directory::remove(const int key) {
+    // DEBUG
+    call_depth++;
+    const string msg = "key = " + to_string(key);
+    dbg_print(this->cls, "remove", msg);
+    // DEBUG
+
     const int pos = this->getPosFromKey(key);
     if (this->buckets[pos]->remove(key)) {
-        cerr << "(d_remove) " << key << '\n';
+        int i;
     }
     this->join();
+
+    call_depth--;
 }
 
 int main() {
@@ -266,6 +298,7 @@ int main() {
     d.insert(2, "string value");
     d.insert(3, "something");
     d.insert(4, "soso");
+    d.insert(6, "else");
     d.remove(3);
     cout << endl;
     return 0;
