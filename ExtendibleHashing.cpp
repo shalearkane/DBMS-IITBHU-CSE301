@@ -6,8 +6,21 @@
 using namespace std;
 
 #define BIGPRIME 99991
+#define DEBUG 1
+
+int call_depth = 0;
+
+void dbg_print(string cls, string func, string msg) {
+    if (!DEBUG)
+        return;
+    for (int i = 0; i < call_depth; i++) {
+        cerr << '-';
+    }
+    cerr << cls << "\t" << func << " : " << msg << '\n';
+}
 
 class Bucket {
+    const string cls = "Bucket";
     const long unsigned int size;
     int depth;
     list<pair<const int, string>> values;
@@ -19,13 +32,23 @@ class Bucket {
     bool insert(const int key, const string value);
     int getDepth() { return this->depth; };
     bool mergeFromBucket(Bucket *b) {
+        // DEBUG
+        call_depth++;
+        const string msg = "";
+        dbg_print(this->cls, "mergeFromBucket", msg);
+        // DEBUG
+
+        bool ret = true;
         for (pair<int, string> p : b->getValues()) {
             if (!this->insert(p.first, p.second))
-                return false;
+                ret = false;
         }
         // reduce depth
         this->depth--;
-        return true;
+
+        call_depth--;
+
+        return ret;
     };
     list<pair<const int, string>> getValues() { return this->values; };
     int findKey(const int key);
@@ -68,36 +91,46 @@ bool Bucket::updateKey(const int key, const string value) {
 }
 
 bool Bucket::insert(const int key, const string value) {
-    cerr << "(b insert) key = " << key << ' ';
-    cerr << "size = " << this->values.size() << '\n';
-    cerr << "(b insert) contents = ";
-    for(pair<int, string> p : this->values) {
-        cerr << p.first << ", ";
-    }
-    cerr << '\n';
+    // DEBUG
+    call_depth++;
+    const string msg = "key = " + to_string(key) + ", value = " + value;
+    dbg_print(this->cls, "insert", msg);
+    // DEBUG
 
+    bool ret = true;
     if (findKey(key) >= 0) {
         this->updateKey(key, value);
-        return true;
-    }
-
-    if (this->values.size() < size) {
+        ret = true;
+    } else if (this->values.size() < size) {
         this->values.emplace_back(make_pair(key, value));
-        return true;
+        ret = true;
     } else
-        return false;
+        ret = false;
+
+    call_depth--;
+    return ret;
 }
 
 bool Bucket::remove(const int key) {
+    // DEBUG
+    const string msg = "key = " + to_string(key);
+    dbg_print(this->cls, "remove", msg);
+    // DEBUG
+
+    bool ret = true;
     if (findKey(key) >= 0) {
         this->values.remove({key, getValueFromKey(key)});
-        return true;
+        ret = true;
     } else {
-        return false;
+        ret = false;
     }
+
+    call_depth--;
+    return ret;
 }
 
 class Directory {
+    const string cls = "Directory";
     const long unsigned int bucket_size;
     int global_depth;
     vector<Bucket *> buckets;
@@ -122,12 +155,18 @@ Directory::Directory(const int depth, const int bucket_size)
     : bucket_size(bucket_size), global_depth(depth) {
     assert(this->global_depth > 0 && this->bucket_size > 0);
 
-    for(int i = 0; i<this->getBucketCount(); i++) {
+    for (int i = 0; i < this->getBucketCount(); i++) {
         this->buckets.push_back(new Bucket(depth, bucket_size));
     }
 }
 
 void Directory::join() {
+    // DEBUG
+    call_depth++;
+    const string msg = "";
+    dbg_print(this->cls, "join", msg);
+    // DEBUG
+
     // try to join all buckets
     const int half_count = this->getBucketCount() / 2;
     for (int i = 0; i < half_count; i++) {
@@ -136,13 +175,15 @@ void Directory::join() {
             (this->buckets[i]->getValues().size() +
                  this->buckets[i + half_count]->getValues().size() <=
              this->bucket_size)) {
-            cout << "(d_join) " << i << " " << i + half_count << '\n';
+
             // merge the second bucket into first
             this->buckets[i]->mergeFromBucket(this->buckets[i + half_count]);
             delete this->buckets[i + half_count];
             this->buckets[i + half_count] = this->buckets[i];
         }
     }
+
+    call_depth--;
 }
 
 void Directory::split(const int bucket_index) {
@@ -152,7 +193,6 @@ void Directory::split(const int bucket_index) {
     // count(x) = local depth
     // count(o) = globalDepth - localDepth
     // after splitting -> ooXxxx point to different buckets
-    cerr << "(d_split) " << bucket_index << '\n';
     if (this->global_depth <= this->buckets[bucket_index]->getDepth()) {
         cerr << "Err: split attempted on a bucket whose dept is equal to "
                 "global depth";
@@ -185,23 +225,17 @@ void Directory::split(const int bucket_index) {
     }
 
     delete b;
-    cerr << "(d_split) done" << '\n';
 }
 
 void Directory::grow() {
-    cerr << "(d_grow) from = " << this->global_depth << '\n';
     const vector<Bucket *> temp = this->buckets;
     this->buckets.insert(buckets.end(), temp.begin(), temp.end());
     this->global_depth++;
-    cerr << "(d_grow) global_depth = " << this->global_depth << '\n';
 }
 
 void Directory::insert(const int key, const string value) {
-    cerr << "(d_insert) key = " << key << " ";
 
     const int pos = this->getPosFromKey(key);
-
-    cerr << "pos = " << pos << '\n';
 
     if (!this->buckets[pos]->insert(key, value)) {
         // split the bucket or grow the directory
