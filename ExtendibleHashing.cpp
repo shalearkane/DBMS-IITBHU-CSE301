@@ -70,6 +70,11 @@ bool Bucket::updateKey(const int key, const string value) {
 bool Bucket::insert(const int key, const string value) {
     cerr << "(b insert) key = " << key << ' ';
     cerr << "size = " << this->values.size() << '\n';
+    cerr << "(b insert) contents = ";
+    for(pair<int, string> p : this->values) {
+        cerr << p.first << ", ";
+    }
+    cerr << '\n';
 
     if (findKey(key) >= 0) {
         this->updateKey(key, value);
@@ -117,8 +122,9 @@ Directory::Directory(const int depth, const int bucket_size)
     : bucket_size(bucket_size), global_depth(depth) {
     assert(this->global_depth > 0 && this->bucket_size > 0);
 
-    this->buckets = vector<Bucket *>(this->getBucketCount(),
-                                     new Bucket(depth, bucket_size));
+    for(int i = 0; i<this->getBucketCount(); i++) {
+        this->buckets.push_back(new Bucket(depth, bucket_size));
+    }
 }
 
 void Directory::join() {
@@ -183,10 +189,11 @@ void Directory::split(const int bucket_index) {
 }
 
 void Directory::grow() {
-    cerr << "(d_grow) to = " << this->global_depth + 1 << '\n';
+    cerr << "(d_grow) from = " << this->global_depth << '\n';
     const vector<Bucket *> temp = this->buckets;
     this->buckets.insert(buckets.end(), temp.begin(), temp.end());
     this->global_depth++;
+    cerr << "(d_grow) global_depth = " << this->global_depth << '\n';
 }
 
 void Directory::insert(const int key, const string value) {
@@ -221,11 +228,10 @@ void Directory::remove(const int key) {
 int main() {
     cout << "Extendible Hashing\n";
     // depth 1 and bucket size 2
-    Directory d(1, 1);
-    d.insert(3, "string value");
-    d.insert(1, "something");
-    d.insert(7, "soso");
-    d.insert(3, "something else");
+    Directory d(1, 2);
+    d.insert(2, "string value");
+    d.insert(3, "something");
+    d.insert(4, "soso");
     d.remove(3);
     cout << endl;
     return 0;
