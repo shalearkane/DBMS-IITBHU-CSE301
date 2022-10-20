@@ -1,5 +1,6 @@
 #include <bits/stdc++.h>
 #include <cassert>
+#include <cstdlib>
 #include <string>
 #include <utility>
 using namespace std;
@@ -97,7 +98,7 @@ class Directory {
     vector<Bucket *> buckets;
     int hashing_func(const int n) { return n % BIGPRIME; };
     void grow();
-    void split(int bucket_no);
+    void split(int bucket_index);
     int getBucketCount() { return 1 << global_depth; };
     int getPosFromKey(const int key) {
         return this->hashing_func(key) % this->getBucketCount();
@@ -138,17 +139,40 @@ void Directory::join() {
     }
 }
 
-void Directory::split(const int bucket_no) {
-    // get the bucket pos pointing to the same
-    // its always 0xxx and 1xxx
-    cerr << "(d_split) " << bucket_no << '\n';
-    const int b_pos1 = bucket_no % (this->getBucketCount() / 2);
-    const int b_pos2 = b_pos1 + (this->getBucketCount() / 2);
+void Directory::split(const int bucket_index) {
+    // bucket index provides oooxxx
+    // where xxx is determined parts of hash
+    // ooo is undetermined
+    // count(x) = local depth
+    // count(o) = globalDepth - localDepth
+    // after splitting -> ooXxxx point to different buckets
+    cerr << "(d_split) " << bucket_index << '\n';
+    if (this->global_depth <= this->buckets[bucket_index]->getDepth()) {
+        cerr << "Err: split attempted on a bucket whose dept is equal to "
+                "global depth";
+        exit(-1);
+    }
 
-    Bucket *b = this->buckets[bucket_no];
+    const int local_depth = this->buckets[bucket_index]->getDepth();
 
-    this->buckets[b_pos1] = new Bucket(b->getDepth() + 1, this->bucket_size);
-    this->buckets[b_pos2] = new Bucket(b->getDepth() + 1, this->bucket_size);
+    // get 000xxx
+    const int b_least = bucket_index % (1 << local_depth);
+    assert(this->buckets[b_least] == this->buckets[bucket_index]);
+
+    const int increment = (1 << local_depth);
+    assert(increment < this->getBucketCount());
+
+    Bucket *b1 = new Bucket(local_depth + 1, this->bucket_size);
+    Bucket *b2 = new Bucket(local_depth + 1, this->bucket_size);
+    Bucket *b = this->buckets[b_least];
+
+    for (int index = b_least, i = 0; index < this->getBucketCount();
+         index += increment, i++) {
+        if (i % 2 == 0)
+            this->buckets[index] = b1;
+        else
+            this->buckets[index] = b2;
+    }
 
     for (pair<const int, const string> p : b->getValues()) {
         this->insert(p.first, p.second);
