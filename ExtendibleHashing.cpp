@@ -245,15 +245,24 @@ void Directory::split(const int bucket_index) {
 }
 
 void Directory::grow() {
+    // DEBUG
+    call_depth++;
+    const string msg = "";
+    dbg_print(this->cls, "grow", msg);
+    // DEBUG
+
     const vector<Bucket *> temp = this->buckets;
     this->buckets.insert(buckets.end(), temp.begin(), temp.end());
     this->global_depth++;
+
+    call_depth--;
 }
 
 void Directory::insert(const int key, const string value) {
     // DEBUG
     call_depth++;
-    const string msg = "key = " + to_string(key) + ", value = " + value;
+    const string msg = "key = " + to_string(key) +
+                       ", pos = " + to_string(this->getPosFromKey(key));
     dbg_print(this->cls, "insert", msg);
     // DEBUG
 
@@ -297,8 +306,8 @@ int main() {
     Directory d(1, 2);
     d.insert(2, "string value");
     d.insert(3, "something");
-    d.insert(4, "soso");
-    d.insert(6, "else");
+    d.insert(6, "soso");
+    d.insert(14, "else");
     d.remove(3);
     cout << endl;
     return 0;
