@@ -59,6 +59,13 @@ class Bucket {
     list<pair<const int, string>> getValues() { return this->values; };
     int findKey(const int key);
     bool remove(const int key);
+    void print() {
+        cout << " ";
+        for (pair<int, string> p : this->values) {
+            cout << "(" << p.first << ", " << p.second << ") ";
+        }
+        cout << '\n';
+    }
 };
 
 Bucket::Bucket(const int depth, const int size) : size(size), depth(depth) {
@@ -159,7 +166,14 @@ class Directory {
     void insert(const int key, const string value);
     bool remove(const int key);
 
-    void print(){};
+    void print() {
+        int count = 0;
+        cout << "Buckets :\n";
+        for (Bucket *b : this->buckets) {
+            cout << count++ << '\t';
+            b->print();
+        }
+    };
 };
 
 Directory::Directory(const int depth, const int bucket_size)
@@ -345,12 +359,15 @@ void menu() {
 
 int main() {
     cout << "Extendible Hashing\n";
-    // depth 1 and bucket size 2
-    Directory d(1, 2);
-    d.insert(2, "string value");
-    d.insert(3, "something");
-    d.insert(6, "soso");
-    d.remove(3);
+
+    int depth_temp = 1, size_temp = 2;
+
+    cout << "Enter directory depth : (for example 1) ";
+    cin >> depth_temp;
+    cout << "Enter bucket size : (for example 2) ";
+    cin >> size_temp;
+
+    Directory d(depth_temp, size_temp);
     menu();
     do {
         string choice;
@@ -367,7 +384,7 @@ int main() {
             cin >> key;
             d.remove(key);
         } else if (choice != "e") {
-            cout << "invalid option";
+            cout << "\n**invalid option**\n";
             menu();
         } else {
             break;
