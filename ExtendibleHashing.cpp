@@ -1,8 +1,9 @@
-#include <bits/stdc++.h>
 #include <cassert>
-#include <cstdlib>
+#include <iostream>
+#include <list>
 #include <string>
 #include <utility>
+#include <vector>
 using namespace std;
 
 #define BIGPRIME 99991
@@ -10,7 +11,7 @@ using namespace std;
 
 int call_depth = 0;
 
-void dbg_print(string cls, string func, string msg) {
+void dbg_print(string cls, string func, string msg = "") {
     if (!DEBUG)
         return;
     for (int i = 0; i < call_depth - 1; i++) {
@@ -18,7 +19,11 @@ void dbg_print(string cls, string func, string msg) {
     }
     if (call_depth - 1)
         cerr << "└─";
-    cerr << cls << "\t" << func << " : " << msg << '\n';
+
+    cerr << cls << '\t' << func;
+    if (msg != "")
+        cerr << " : " << msg;
+    cerr << '\n';
 }
 
 class Bucket {
@@ -36,8 +41,7 @@ class Bucket {
     bool mergeFromBucket(Bucket *b) {
         // DEBUG
         call_depth++;
-        const string msg = "";
-        dbg_print(this->cls, "mergeFromBucket", msg);
+        dbg_print(this->cls, "mergeFromBucket");
         // DEBUG
 
         bool ret = true;
@@ -140,16 +144,20 @@ class Directory {
     int hashing_func(const int n) { return n % BIGPRIME; };
     void grow();
     void split(int bucket_index);
-    int getBucketCount() { return 1 << global_depth; };
+    int getBucketCount() {
+        assert((1 << this->global_depth) == (int)this->buckets.size());
+        return 1 << this->global_depth;
+    };
     int getPosFromKey(const int key) {
         return this->hashing_func(key) % this->getBucketCount();
     }
-    void join();
+    void join_buckets();
+    void shrink();
 
   public:
     Directory(const int depth, const int bucket_size);
     void insert(const int key, const string value);
-    void remove(const int key);
+    bool remove(const int key);
 
     void print();
 };
@@ -158,16 +166,40 @@ Directory::Directory(const int depth, const int bucket_size)
     : bucket_size(bucket_size), global_depth(depth) {
     assert(this->global_depth > 0 && this->bucket_size > 0);
 
-    for (int i = 0; i < this->getBucketCount(); i++) {
+    for (int i = 0; i < (1 << this->global_depth); i++) {
         this->buckets.push_back(new Bucket(depth, bucket_size));
     }
 }
 
-void Directory::join() {
+void Directory::shrink() {
     // DEBUG
     call_depth++;
-    const string msg = "";
-    dbg_print(this->cls, "join", msg);
+    dbg_print(this->cls, "shrink");
+    // DEBUG
+
+    // check if the local depth of all buckets is less global depth
+    bool can_shrink = true;
+    for (Bucket *b : this->buckets) {
+        if (b->getDepth() >= this->global_depth) {
+            can_shrink = false;
+            break;
+        }
+    }
+    if (can_shrink) {
+        const int half_count = this->getBucketCount() / 2;
+        this->buckets.erase(this->buckets.begin() + half_count,
+                            this->buckets.end());
+        this->global_depth--;
+    }
+
+    assert(this->getBucketCount() == (int)this->buckets.size());
+    call_depth--;
+}
+
+void Directory::join_buckets() {
+    // DEBUG
+    call_depth++;
+    dbg_print(this->cls, "join_buckets");
     // DEBUG
 
     // try to join all buckets
@@ -199,9 +231,9 @@ void Directory::join() {
 void Directory::split(const int bucket_index) {
     // DEBUG
     call_depth++;
-    const string msg = "";
-    dbg_print(this->cls, "split", msg);
+    dbg_print(this->cls, "split");
     // DEBUG
+
     // bucket index provides oooxxx
     // where xxx is determined parts of hash
     // ooo is undetermined
@@ -247,8 +279,7 @@ void Directory::split(const int bucket_index) {
 void Directory::grow() {
     // DEBUG
     call_depth++;
-    const string msg = "";
-    dbg_print(this->cls, "grow", msg);
+    dbg_print(this->cls, "grow");
     // DEBUG
 
     const vector<Bucket *> temp = this->buckets;
@@ -284,20 +315,24 @@ void Directory::insert(const int key, const string value) {
     call_depth--;
 }
 
-void Directory::remove(const int key) {
+bool Directory::remove(const int key) {
     // DEBUG
     call_depth++;
     const string msg = "key = " + to_string(key);
     dbg_print(this->cls, "remove", msg);
     // DEBUG
 
+    bool ret = false;
     const int pos = this->getPosFromKey(key);
     if (this->buckets[pos]->remove(key)) {
-        int i;
+        ret = true;
     }
-    this->join();
+
+    this->join_buckets();
+    this->shrink();
 
     call_depth--;
+    return ret;
 }
 
 int main() {
@@ -307,7 +342,6 @@ int main() {
     d.insert(2, "string value");
     d.insert(3, "something");
     d.insert(6, "soso");
-    d.insert(14, "else");
     d.remove(3);
     cout << endl;
     return 0;
