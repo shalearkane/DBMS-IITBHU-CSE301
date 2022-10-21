@@ -159,7 +159,7 @@ class Directory {
     void insert(const int key, const string value);
     bool remove(const int key);
 
-    void print();
+    void print(){};
 };
 
 Directory::Directory(const int depth, const int bucket_size)
@@ -336,10 +336,11 @@ bool Directory::remove(const int key) {
 }
 
 void menu() {
-    cerr << "Command       \tDescription\n";
-    cerr << "i <key, value>\tinsert\n";
-    cerr << "d <key>       \tdelete\n";
-    cerr << "p             \tprint\n";
+    cout << "Command       \tDescription\n"
+         << "i <key, value>\tinsert\n"
+         << "d <key>       \tdelete\n"
+         << "p             \tprint\n"
+         << "e             \texit\n";
 }
 
 int main() {
@@ -351,25 +352,28 @@ int main() {
     d.insert(6, "soso");
     d.remove(3);
     menu();
-    // do{
-    // 	cout<<"> ";
-    // 	cin>>choice;
-    // 	cout<<el;
-    // 	if(choice == "insert"){
-	// 		cin>>value;
-	// 		EH.insert(value, false);
-    // 	} else if(choice == "display"){
-    // 		EH.display();
-    // 	} else if(choice == "remove"){
-    // 		int mode;
-    // 		cin>>value;
-    // 		EH.remove(value, 2);
-    // 	} else if(choice != "exit"){
-    // 		cout<<"*U* INVALID! PLEASE SELECT FROM OPTIONS";
-    // 		showMenu();
-    // 	}
+    do {
+        string choice;
+        int key;
+        string value;
+        cout << "> ";
+        cin >> choice;
+        if (choice == "i") {
+            cin >> key >> value;
+            d.insert(key, value);
+        } else if (choice == "p") {
+            d.print();
+        } else if (choice == "d") {
+            cin >> key;
+            d.remove(key);
+        } else if (choice != "e") {
+            cout << "invalid option";
+            menu();
+        } else {
+            break;
+        }
 
-    // } while(choice != "exit");
+    } while (true);
     cout << endl;
     return 0;
 }
