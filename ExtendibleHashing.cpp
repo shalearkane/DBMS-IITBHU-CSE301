@@ -307,7 +307,7 @@ void Directory::insert(const int key, const string value) {
     // DEBUG
     call_depth++;
     const string msg = "key = " + to_string(key) +
-                       ", pos = " + to_string(this->getPosFromKey(key));
+                       ", bucket index = " + to_string(this->getPosFromKey(key));
     dbg_print(this->cls, "insert", msg);
     // DEBUG
 
