@@ -351,10 +351,11 @@ bool Directory::remove(const int key) {
 
 void menu() {
     cout << "Command       \tDescription\n"
+         << "---------------------------\n"
          << "i <key, value>\tinsert\n"
          << "d <key>       \tdelete\n"
          << "p             \tprint\n"
-         << "e             \texit\n";
+         << "q             \tquit\n";
 }
 
 int main() {
@@ -383,8 +384,8 @@ int main() {
         } else if (choice == "d") {
             cin >> key;
             d.remove(key);
-        } else if (choice != "e") {
-            cout << "\n**invalid option**\n";
+        } else if (choice != "q") {
+            cout << "\nInvalid option '" << choice << "'\n\n";
             menu();
         } else {
             break;
