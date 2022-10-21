@@ -335,6 +335,13 @@ bool Directory::remove(const int key) {
     return ret;
 }
 
+void menu() {
+    cerr << "Command       \tDescription\n";
+    cerr << "i <key, value>\tinsert\n";
+    cerr << "d <key>       \tdelete\n";
+    cerr << "p             \tprint\n";
+}
+
 int main() {
     cout << "Extendible Hashing\n";
     // depth 1 and bucket size 2
@@ -343,6 +350,26 @@ int main() {
     d.insert(3, "something");
     d.insert(6, "soso");
     d.remove(3);
+    menu();
+    // do{
+    // 	cout<<"> ";
+    // 	cin>>choice;
+    // 	cout<<el;
+    // 	if(choice == "insert"){
+	// 		cin>>value;
+	// 		EH.insert(value, false);
+    // 	} else if(choice == "display"){
+    // 		EH.display();
+    // 	} else if(choice == "remove"){
+    // 		int mode;
+    // 		cin>>value;
+    // 		EH.remove(value, 2);
+    // 	} else if(choice != "exit"){
+    // 		cout<<"*U* INVALID! PLEASE SELECT FROM OPTIONS";
+    // 		showMenu();
+    // 	}
+
+    // } while(choice != "exit");
     cout << endl;
     return 0;
 }
