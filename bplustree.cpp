@@ -2,11 +2,28 @@
 #include <cassert>
 #include <cstddef>
 using namespace std;
-#define deb 1
+
+#define DEBUG 1
+int call_depth = 0;
+int print_depth = 0;
 
 #define ORDER 2
 #define INITIAL_INDEX 10
 
+void dbg_print(string cls, string func, string msg = "") {
+    if (!DEBUG)
+        return;
+    for (int i = 0; i < call_depth - 1; i++) {
+        cerr << "  ";
+    }
+    if (call_depth - 1)
+        cerr << "└─";
+
+    cerr << cls << '\t' << func;
+    if (msg != "")
+        cerr << " : " << msg;
+    cerr << '\n';
+}
 class BPTreeNode {
     int _fill_count = 0;
     int indexes[ORDER];
@@ -64,7 +81,6 @@ class BPTreeNode {
 class BPTree {
     int n;
     BPTreeNode *root;
-    BPTree();
     void insertIntoChildren(BPTreeNode *n, int index, int key);
     bool insertIntoLeaf(BPTreeNode *n, int key);
     bool checkSplitSuccess(BPTreeNode *parent);
@@ -74,6 +90,8 @@ class BPTree {
                                       BPTreeNode *child_node);
 
   public:
+    BPTree();
+    void print() { this->root->traverse(root); };
     void insert(int key);
 };
 
@@ -204,7 +222,7 @@ void BPTree::splitRecursionUpInternalNode(BPTreeNode *parent,
         vector<int> v(*parent->getIndexes());
         assert(v.size() == ORDER);
 
-        parent->clear_indexes_of_parent(parent->is_leaf);
+        parent->clear_indexes_of_parent(!(parent->is_leaf));
 
         // strictly for indexes within parent nodes
         int i = 0;
@@ -258,20 +276,71 @@ bool BPTree::insertIntoLeaf(BPTreeNode *n, int key) {
     return n->insert(key);
 }
 
-void BPTreeNode::traverse(BPTreeNode *tn) {
-    for (int i = 0; i < tn->_fill_count; i++) {
-        if (!tn->is_leaf) {
-            traverse(tn->child_ptr[i]);
-        }
+void BPTreeNode::traverse(BPTreeNode *n) {
+    print_depth++;
+    if (n == NULL)
+        return;
 
-        cout << tn->indexes[i];
-    }
+    for (int i = 0; i < print_depth; i++)
+        cout << "-";
+    cout << "Indexes : ";
 
-    if (!tn->is_leaf) {
-        traverse(tn->child_ptr[tn->_fill_count]);
+    for (int i = 0; i < ORDER; i++) {
+        cout << n->getIndexes()[i] << ", ";
     }
 
     cout << '\n';
+
+    for (int i = 0; i < ORDER + 1; i++) {
+        traverse(n->child_ptr[i]);
+    }
+    cout << '\n';
+    print_depth--;
 }
 
-int main() { return 0; }
+void menu() {
+    cout << "Command       \tDescription\n"
+         << "---------------------------\n"
+         << "i <key, value>\tinsert\n"
+         << "d <key>       \tdelete\n"
+         << "p             \tprint\n"
+         << "q             \tquit\n";
+}
+
+int main() {
+    cout << "B+ Tree\n";
+
+    int depth_temp = 1, size_temp = 2;
+
+    cout << "Enter directory depth : (for example 1) ";
+    cin >> depth_temp;
+    cout << "Enter bucket size : (for example 2) ";
+    cin >> size_temp;
+
+    BPTree *bpt = new BPTree();
+    menu();
+    do {
+        string choice;
+        int key;
+        string value;
+        cout << "> ";
+        cin >> choice;
+        if (choice == "i") {
+            cin >> key >> value;
+            bpt->insert(key);
+        } else if (choice == "p") {
+            bpt->print();
+        } else if (choice == "d") {
+            cin >> key;
+            // d.remove(key);
+        } else if (choice != "q") {
+            cout << "\nInvalid option '" << choice << "'\n\n";
+            menu();
+        } else {
+            break;
+        }
+
+    } while (true);
+    cout << endl;
+    return 0;
+}
