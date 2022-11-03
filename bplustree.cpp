@@ -1,6 +1,7 @@
 #include <bits/stdc++.h>
 #include <cassert>
 #include <cstddef>
+#include <string>
 using namespace std;
 
 #define DEBUG 1
@@ -25,6 +26,7 @@ void dbg_print(string cls, string func, string msg = "") {
     cerr << '\n';
 }
 class BPTreeNode {
+    string cls = "Node";
     int _fill_count = 0;
     int indexes[ORDER];
 
@@ -67,19 +69,28 @@ class BPTreeNode {
     }
 
     void shiftAfterIndexAndInsertChild(int index, BPTreeNode *child) {
+        // DEBUG
+        call_depth++;
+        const string msg = "index = " + to_string(index) +
+                           ", value = " + to_string(child->getIndexes()[index]);
+        dbg_print(this->cls, "shiftAfterIndexAndInsertChild", msg);
+        // DEBUG
+
         for (int i = this->_fill_count - 1; i > index; i--) {
             this->indexes[i] = this->indexes[i - 1];
             this->child_ptr[i + 1] = this->child_ptr[i];
         }
         this->indexes[index] = child->getIndexes()[0];
         this->child_ptr[index + 1] = child;
+
+        call_depth--;
     }
 
     int *getIndexes() { return indexes; };
 };
 
 class BPTree {
-    int n;
+    string cls = "Tree";
     BPTreeNode *root;
     void insertIntoChildren(BPTreeNode *n, int index, int key);
     bool insertIntoLeaf(BPTreeNode *n, int key);
@@ -135,6 +146,12 @@ BPTree::BPTree() {
 }
 
 void BPTree::insert(int key) {
+    // DEBUG
+    call_depth++;
+    const string msg = "key = " + to_string(key);
+    dbg_print(this->cls, "insert", msg);
+    // DEBUG
+
     assert(key > 0);
 
     BPTreeNode *x = root;
@@ -149,10 +166,20 @@ void BPTree::insert(int key) {
         else
             break;
     }
+
     insertIntoChildren(this->root, less_than, key);
+
+    call_depth--;
 }
 
 void BPTree::insertIntoChildren(BPTreeNode *n, int index, int key) {
+    // DEBUG
+    call_depth++;
+    const string msg =
+        "index = " + to_string(index) + " key = " + to_string(key);
+    dbg_print(this->cls, "insertIntoChildren", msg);
+    // DEBUG
+
     // if child pointer is null, create a new leaf
     if (n->child_ptr[index] == NULL) {
         n->child_ptr[index] = new BPTreeNode(n);
@@ -187,11 +214,21 @@ void BPTree::insertIntoChildren(BPTreeNode *n, int index, int key) {
         }
         insertIntoChildren(n->child_ptr[index], less_than, key);
     }
+
+    call_depth--;
 }
 
 void BPTree::splitRecursionUpLeaf(BPTreeNode *parent, int child_index,
                                   int additional) {
-    BPTreeNode *new_node = new BPTreeNode(parent->parent_ptr);
+
+    // DEBUG
+    call_depth++;
+    const string msg = "index = " + to_string(child_index) +
+                       " additional = " + to_string(additional);
+    dbg_print(this->cls, "insertIntoChildren", msg);
+    // DEBUG
+
+    BPTreeNode *new_node = new BPTreeNode(parent);
 
     vector<int> v(*(parent->child_ptr[child_index])->getIndexes());
     parent->child_ptr[child_index]->clear_indexes();
@@ -210,10 +247,22 @@ void BPTree::splitRecursionUpLeaf(BPTreeNode *parent, int child_index,
     }
 
     splitRecursionUpInternalNode(parent, new_node);
+
+    call_depth--;
 }
 
 void BPTree::splitRecursionUpInternalNode(BPTreeNode *parent,
                                           BPTreeNode *child_node) {
+    // DEBUG
+    call_depth++;
+    const string msg =
+        "parent = " + to_string(parent->getIndexes()[0]) + "-" +
+        to_string(parent->getIndexes()[parent->fill_count() - 1]) +
+        ", child_node = " + to_string(child_node->getIndexes()[0]) + "-" +
+        to_string(child_node->getIndexes()[child_node->fill_count() - 1]);
+    dbg_print(this->cls, "SplitRecursionUpInternalNode");
+    // DEBUG
+
     if (parent->is_filled()) {
         // split parent node
         BPTreeNode *gran_parent = parent->parent_ptr;
@@ -245,6 +294,7 @@ void BPTree::splitRecursionUpInternalNode(BPTreeNode *parent,
 
         splitRecursionUpInternalNode(gran_parent, sibling);
 
+        call_depth--;
         return;
     }
 
@@ -260,6 +310,8 @@ void BPTree::splitRecursionUpInternalNode(BPTreeNode *parent,
     }
     // push the elements after less_than
     parent->shiftAfterIndexAndInsertChild(less_than, child_node);
+
+    call_depth--;
 }
 
 bool BPTree::checkSplitSuccess(BPTreeNode *parent) {
@@ -271,15 +323,25 @@ bool BPTree::checkSplitSuccess(BPTreeNode *parent) {
 }
 
 bool BPTree::insertIntoLeaf(BPTreeNode *n, int key) {
+    // DEBUG
+    call_depth++;
+    const string msg = "key = " + to_string(key);
+    dbg_print(this->cls, "insertIntoLeaf", msg);
+    // DEBUG
+
     assert(n != NULL);
     assert(n->is_leaf);
     return n->insert(key);
+
+    call_depth--;
 }
 
 void BPTreeNode::traverse(BPTreeNode *n) {
     print_depth++;
-    if (n == NULL)
+    if (n == NULL) {
+        print_depth--;
         return;
+    }
 
     for (int i = 0; i < print_depth; i++)
         cout << "-";
@@ -301,7 +363,7 @@ void BPTreeNode::traverse(BPTreeNode *n) {
 void menu() {
     cout << "Command       \tDescription\n"
          << "---------------------------\n"
-         << "i <key, value>\tinsert\n"
+         << "i <key>       \tinsert\n"
          << "d <key>       \tdelete\n"
          << "p             \tprint\n"
          << "q             \tquit\n";
@@ -309,13 +371,6 @@ void menu() {
 
 int main() {
     cout << "B+ Tree\n";
-
-    int depth_temp = 1, size_temp = 2;
-
-    cout << "Enter directory depth : (for example 1) ";
-    cin >> depth_temp;
-    cout << "Enter bucket size : (for example 2) ";
-    cin >> size_temp;
 
     BPTree *bpt = new BPTree();
     menu();
@@ -326,8 +381,9 @@ int main() {
         cout << "> ";
         cin >> choice;
         if (choice == "i") {
-            cin >> key >> value;
+            cin >> key;
             bpt->insert(key);
+            bpt->print();
         } else if (choice == "p") {
             bpt->print();
         } else if (choice == "d") {
