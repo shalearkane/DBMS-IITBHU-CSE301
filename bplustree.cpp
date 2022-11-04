@@ -119,11 +119,14 @@ class BPTree {
     void splitRootNode();
     int leftMostLeaf(BPTreeNode *n);
     int rightMostLeaf(BPTreeNode *n);
+    void removeFromChildren(BPTreeNode *, const int);
+    void removeFromLeaf(BPTreeNode *, const int);
 
   public:
     BPTree();
     void print() { this->root->traverse(root); };
-    void insert(int key);
+    void insert(const int key);
+    void remove(const int key);
 };
 
 BPTreeNode::BPTreeNode(BPTreeNode *parent) {
@@ -179,8 +182,6 @@ int BPTree::getInsertPosition(BPTreeNode *n, const int key) {
 
     // check where to insert
     for (int i = n->fill_count() - 1; i >= 0; i--) {
-        cout << "\ni : " << i << " : " << key << " : " << n->getIndexes()[i]
-             << '\n';
         if (key < n->getIndexes()[i]) {
             less_than = i;
         } else {
@@ -486,10 +487,47 @@ void BPTreeNode::traverse(BPTreeNode *n, string node_name) {
 
     cout << '\n';
     for (int i = 0; i < ORDER + 1; i++) {
+        if (n->child_ptr[i] != NULL)
+            assert(n->child_ptr[i]->parent_ptr = n);
         traverse(n->child_ptr[i]);
     }
 
     print_depth--;
+}
+
+void BPTree::removeFromLeaf(BPTreeNode *n, const int key) {
+    assert(n->is_leaf);
+    int i = 0;
+    for (int i = 0; i < n->fill_count(); i++) {
+        if (n->getIndexes()[i] == key)
+            break;
+    }
+
+    const int clear_index = i;
+
+    vector<int> v;
+    for (i = i + 1; i < n->fill_count(); i++) {
+        v.push_back(n->getIndexes()[i]);
+    }
+
+    n->clear_indexes(clear_index);
+
+    for (int i : v)
+        n->insert(i);
+}
+
+void BPTree::removeFromChildren(BPTreeNode *n, const int key) {
+    if (n->is_leaf)
+        removeFromLeaf(n, key);
+    else {
+        int index = getInsertPosition(n, key);
+        removeFromChildren(n->child_ptr[index], key);
+    }
+}
+
+void BPTree::remove(const int key) {
+    int index = getInsertPosition(this->root, key);
+    removeFromChildren(this->root->child_ptr[index], key);
 }
 
 void menu() {
@@ -520,7 +558,7 @@ int main() {
             bpt->print();
         } else if (choice == "d") {
             cin >> key;
-            // d.remove(key);
+            bpt->remove(key);
         } else if (choice != "q") {
             cout << "\nInvalid option '" << choice << "'\n\n";
             menu();
