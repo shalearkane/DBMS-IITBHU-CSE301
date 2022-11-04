@@ -1,7 +1,8 @@
-#include <bits/stdc++.h>
+#include <algorithm>
 #include <cassert>
-#include <cstddef>
+#include <iostream>
 #include <string>
+#include <vector>
 using namespace std;
 
 #define DEBUG 1
@@ -38,6 +39,7 @@ class BPTreeNode {
     BPTreeNode *parent_ptr = NULL;
     bool is_root;
     bool is_leaf;
+    void remove(const int key);
     void traverse(BPTreeNode *tn, string node_name = "");
     int fill_count() {
         assert(_fill_count <= ORDER);
@@ -120,7 +122,6 @@ class BPTree {
     int leftMostLeaf(BPTreeNode *n);
     int rightMostLeaf(BPTreeNode *n);
     void removeFromChildren(BPTreeNode *, const int);
-    void removeFromLeaf(BPTreeNode *, const int);
 
   public:
     BPTree();
@@ -495,30 +496,33 @@ void BPTreeNode::traverse(BPTreeNode *n, string node_name) {
     print_depth--;
 }
 
-void BPTree::removeFromLeaf(BPTreeNode *n, const int key) {
-    assert(n->is_leaf);
+void BPTreeNode::remove(const int key) {
+    assert(this->is_leaf);
     int i = 0;
-    for (int i = 0; i < n->fill_count(); i++) {
-        if (n->getIndexes()[i] == key)
+    for (; i < this->fill_count(); i++) {
+        if (this->getIndexes()[i] == key)
             break;
     }
+
+    if (i >= this->fill_count())
+        return;
 
     const int clear_index = i;
 
     vector<int> v;
-    for (i = i + 1; i < n->fill_count(); i++) {
-        v.push_back(n->getIndexes()[i]);
+    for (i = i + 1; i < this->fill_count(); i++) {
+        v.push_back(this->getIndexes()[i]);
     }
 
-    n->clear_indexes(clear_index);
+    this->clear_indexes(clear_index);
 
     for (int i : v)
-        n->insert(i);
+        this->insert(i);
 }
 
 void BPTree::removeFromChildren(BPTreeNode *n, const int key) {
     if (n->is_leaf)
-        removeFromLeaf(n, key);
+        n->remove(key);
     else {
         int index = getInsertPosition(n, key);
         removeFromChildren(n->child_ptr[index], key);
