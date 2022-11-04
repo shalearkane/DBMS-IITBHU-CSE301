@@ -38,7 +38,7 @@ class BPTreeNode {
     BPTreeNode *parent_ptr = NULL;
     bool is_root;
     bool is_leaf;
-    void traverse(BPTreeNode *tn);
+    void traverse(BPTreeNode *tn, string node_name = "");
     int fill_count() {
         assert(_fill_count <= ORDER);
         return _fill_count;
@@ -60,6 +60,14 @@ class BPTreeNode {
         for (int i = 0; i < ORDER; i++)
             indexes[i] = -1;
         this->_fill_count = 0;
+    }
+
+    void clear_indexes(int from_pos) {
+        assert(!this->is_root);
+        for (int i = from_pos; i < ORDER; i++)
+            indexes[i] = -1;
+
+        this->_fill_count = from_pos;
     }
 
     void clear_indexes_of_parent(bool is_parent) {
@@ -105,6 +113,9 @@ class BPTree {
     void splitRecursionUpInternalNode(BPTreeNode *parent,
                                       BPTreeNode *child_node);
     int getInsertPosition(BPTreeNode *n, const int key);
+    void splitRootNode();
+    int leftMostLeaf(BPTreeNode *n);
+    int rightMostLeaf(BPTreeNode *n);
 
   public:
     BPTree();
@@ -156,7 +167,6 @@ int BPTree::getInsertPosition(BPTreeNode *n, const int key) {
 
     // check where to insert
     for (int i = n->fill_count() - 1; i >= 0; i--) {
-        cout << i << less_than;
         if (key < this->root->getIndexes()[i]) {
             less_than = i;
         } else {
@@ -214,6 +224,9 @@ void BPTree::insertIntoChildren(BPTreeNode *n, const int index, const int key) {
             // check if first strategy will work
             if (checkSplitSuccess(n)) {
                 splitRecursionUpLeaf(n, index, key);
+            } else {
+                this->splitRootNode();
+                this->insert(key);
             }
         }
     } else {
@@ -223,6 +236,80 @@ void BPTree::insertIntoChildren(BPTreeNode *n, const int index, const int key) {
     }
 
     call_depth--;
+}
+
+void BPTree::splitRootNode() {
+    // DEBUG
+    call_depth++;
+    dbg_print(this->cls, "splitRootNode");
+    // DEBUG
+
+    // split roonode only if its full
+    assert(this->root->is_filled());
+    const int sibling_index = (ORDER + 1) / 2;
+    cout << "sibling_index : " << sibling_index << '\n';
+
+    BPTreeNode *new_root =
+        new BPTreeNode(rightMostLeaf(this->root->child_ptr[sibling_index]));
+    new_root->is_root = true;
+
+    BPTreeNode *sibling = new BPTreeNode(new_root);
+    this->root->is_root = false;
+
+    // redistribute to sibling
+    for (int i = sibling_index; i < ORDER; i++) {
+        cout << "Inserting " << this->root->getIndexes()[i] << " into sibling"
+             << '\n';
+
+        sibling->insert(this->root->getIndexes()[i]);
+        sibling->child_ptr[i-sibling_index+1] = this->root->child_ptr[i+1];
+
+        this->root->child_ptr[i+1] = NULL;
+
+        sibling->traverse(sibling, "sibling");
+        this->root->traverse(root, "root");
+    }
+
+    new_root->child_ptr[ORDER] = this->root->child_ptr[ORDER];
+    this->root->child_ptr[ORDER] = NULL;
+
+    cout << "Just before removing indexes from old root : \n";
+    sibling->traverse(sibling, "sibling");
+    this->root->traverse(root, "root");
+
+    this->root->clear_indexes(sibling_index);
+
+    cout << "All done!\n";
+    sibling->traverse(sibling,"sibling");
+    this->root->traverse(root, "root");
+
+    // now set root to new root
+    this->root->parent_ptr = new_root;
+    new_root->child_ptr[0] = this->root;
+    new_root->child_ptr[1] = sibling;
+
+    this->root = new_root;
+    this->root->traverse(this->root, "new_root");
+    call_depth--;
+}
+
+int BPTree::leftMostLeaf(BPTreeNode *n) {
+    assert(n != NULL);
+    for (int i = 0; i < ORDER + 1; i++) {
+        if (n->child_ptr[i] != NULL)
+            return leftMostLeaf(n->child_ptr[i]);
+    }
+    // all are NULL, so we are at leaf node
+    return n->getIndexes()[0];
+}
+
+int BPTree::rightMostLeaf(BPTreeNode *n) {
+    assert(n != NULL);
+    for(int i = n->fill_count(); i >=0;i--) {
+        if(n->child_ptr[i] != NULL) return rightMostLeaf(n->child_ptr[i]);
+    }
+    // all are NULL, so we are at leaf node
+    return n->getIndexes()[n->fill_count()-1];
 }
 
 void BPTree::splitRecursionUpLeaf(BPTreeNode *parent, const int child_index,
@@ -346,7 +433,8 @@ bool BPTree::insertIntoLeaf(BPTreeNode *n, const int key) {
     return n->insert(key);
 }
 
-void BPTreeNode::traverse(BPTreeNode *n) {
+void BPTreeNode::traverse(BPTreeNode *n, string node_name) {
+    if(node_name.size()>0) cout << "Printing '" << node_name << "' :\n";
     print_depth++;
     if (n == NULL) {
         print_depth--;
