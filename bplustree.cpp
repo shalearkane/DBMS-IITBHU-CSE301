@@ -392,7 +392,6 @@ void BPTree::splitRecursionUpInternalNode(BPTreeNode *parent,
             parent->insert(v[i]);
         }
 
-
         // sibling gets least right side child_ptrs
         for (; i < v.size(); i++) {
             sibling->child_ptr[sibling->fill_count() + 1] =
@@ -408,7 +407,7 @@ void BPTree::splitRecursionUpInternalNode(BPTreeNode *parent,
 
         // attach the child to the right most of parent
         parent->insert(child_node->getIndexes()[0]);
-        parent->child_ptr[index+1] = child_node;
+        parent->child_ptr[index + 1] = child_node;
 
         splitRecursionUpInternalNode(gran_parent, sibling);
 
