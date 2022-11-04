@@ -365,7 +365,10 @@ void BPTree::splitRecursionUpInternalNode(BPTreeNode *parent,
     if (parent->is_filled()) {
         // split parent node
         BPTreeNode *gran_parent = parent->parent_ptr;
+
+        // this sibling is not a leaf
         BPTreeNode *sibling = new BPTreeNode(gran_parent);
+        sibling->is_leaf = false;
 
         vector<int> v;
         for (int i = 0; i < parent->fill_count(); i++) {
