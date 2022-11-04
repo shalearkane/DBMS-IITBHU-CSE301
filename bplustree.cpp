@@ -163,11 +163,19 @@ BPTree::BPTree() {
 }
 
 int BPTree::getInsertPosition(BPTreeNode *n, const int key) {
+    // DEBUG
+    call_depth++;
+    const string msg = "n = " + to_string(n->getIndexes()[0]) + "-" +
+                       to_string(n->getIndexes()[n->fill_count() - 1]) +
+                       ", key : " + to_string(key);
+    dbg_print(this->cls, "getInsertPosition", msg);
+    // DEBUG
     int less_than = n->fill_count();
 
     // check where to insert
     for (int i = n->fill_count() - 1; i >= 0; i--) {
-        if (key < this->root->getIndexes()[i]) {
+        cout << "\ni : " << i << " : " << key << " : " << n->getIndexes()[i] << '\n';
+        if (key < n->getIndexes()[i]) {
             less_than = i;
         } else {
             break;
@@ -252,44 +260,32 @@ void BPTree::splitRootNode() {
     BPTreeNode *new_root =
         new BPTreeNode(rightMostLeaf(this->root->child_ptr[sibling_index]));
     new_root->is_root = true;
+    this->root->is_root = false;
+    this->root->is_leaf = false;
 
     BPTreeNode *sibling = new BPTreeNode(new_root);
-    this->root->is_root = false;
+    sibling->is_root = false;
+    sibling->is_leaf = false;
 
     // redistribute to sibling
     for (int i = sibling_index; i < ORDER; i++) {
-        cout << "Inserting " << this->root->getIndexes()[i] << " into sibling"
-             << '\n';
-
         sibling->insert(this->root->getIndexes()[i]);
-        sibling->child_ptr[i-sibling_index+1] = this->root->child_ptr[i+1];
+        sibling->child_ptr[i - sibling_index + 1] =
+            this->root->child_ptr[i + 1];
 
-        this->root->child_ptr[i+1] = NULL;
-
-        sibling->traverse(sibling, "sibling");
-        this->root->traverse(root, "root");
+        this->root->child_ptr[i + 1] = NULL;
     }
 
     new_root->child_ptr[ORDER] = this->root->child_ptr[ORDER];
     this->root->child_ptr[ORDER] = NULL;
-
-    cout << "Just before removing indexes from old root : \n";
-    sibling->traverse(sibling, "sibling");
-    this->root->traverse(root, "root");
-
     this->root->clear_indexes(sibling_index);
 
-    cout << "All done!\n";
-    sibling->traverse(sibling,"sibling");
-    this->root->traverse(root, "root");
-
-    // now set root to new root
+    // now set root to new_root
     this->root->parent_ptr = new_root;
     new_root->child_ptr[0] = this->root;
     new_root->child_ptr[1] = sibling;
 
     this->root = new_root;
-    this->root->traverse(this->root, "new_root");
     call_depth--;
 }
 
@@ -305,11 +301,12 @@ int BPTree::leftMostLeaf(BPTreeNode *n) {
 
 int BPTree::rightMostLeaf(BPTreeNode *n) {
     assert(n != NULL);
-    for(int i = n->fill_count(); i >=0;i--) {
-        if(n->child_ptr[i] != NULL) return rightMostLeaf(n->child_ptr[i]);
+    for (int i = n->fill_count(); i >= 0; i--) {
+        if (n->child_ptr[i] != NULL)
+            return rightMostLeaf(n->child_ptr[i]);
     }
     // all are NULL, so we are at leaf node
-    return n->getIndexes()[n->fill_count()-1];
+    return n->getIndexes()[n->fill_count() - 1];
 }
 
 void BPTree::splitRecursionUpLeaf(BPTreeNode *parent, const int child_index,
@@ -434,7 +431,8 @@ bool BPTree::insertIntoLeaf(BPTreeNode *n, const int key) {
 }
 
 void BPTreeNode::traverse(BPTreeNode *n, string node_name) {
-    if(node_name.size()>0) cout << "Printing '" << node_name << "' :\n";
+    if (node_name.size() > 0)
+        cout << "Printing '" << node_name << "' :\n";
     print_depth++;
     if (n == NULL) {
         print_depth--;
