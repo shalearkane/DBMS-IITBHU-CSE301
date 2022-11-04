@@ -375,11 +375,15 @@ void BPTree::splitRecursionUpInternalNode(BPTreeNode *parent,
         assert(v.size() == ORDER);
 
         // index at which child node will be inserted
+        // so the parent is split unevenly
+        // possible bug, if the insert position is zero
         int index = getInsertPosition(parent, child_node->getIndexes()[0]);
 
         parent->clear_indexes_of_parent(!(parent->is_leaf));
 
         // strictly for indexes within parent nodes
+        // this hack is used since we do no want to play with
+        // indexes directly
         int i = 0;
         for (; i < index; i++) {
             parent->insert(v[i]);
@@ -399,6 +403,7 @@ void BPTree::splitRecursionUpInternalNode(BPTreeNode *parent,
         sibling->child_ptr[sibling->fill_count()] = parent->child_ptr[i];
         parent->child_ptr[i] = NULL;
 
+        // attach the child to the right most of parent
         parent->insert(child_node->getIndexes()[0]);
         parent->child_ptr[index+1] = child_node;
 
