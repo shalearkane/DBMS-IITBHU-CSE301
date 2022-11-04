@@ -32,7 +32,7 @@ class BPTreeNode {
 
   public:
     BPTreeNode(BPTreeNode *parent);
-    BPTreeNode(int index);
+    BPTreeNode(const int index);
 
     BPTreeNode *child_ptr[ORDER + 1];
     BPTreeNode *parent_ptr = NULL;
@@ -68,7 +68,7 @@ class BPTreeNode {
         this->_fill_count = 0;
     }
 
-    void shiftAfterIndexAndInsertChild(int index, BPTreeNode *child) {
+    void shiftAfterIndexAndInsertChild(const int index, BPTreeNode *child) {
         // DEBUG
         call_depth++;
         const string msg = "index = " + to_string(index) +
@@ -96,13 +96,14 @@ class BPTreeNode {
 class BPTree {
     string cls = "Tree";
     BPTreeNode *root;
-    void insertIntoChildren(BPTreeNode *n, int index, int key);
-    bool insertIntoLeaf(BPTreeNode *n, int key);
+    void insertIntoChildren(BPTreeNode *n, const int index, const int key);
+    bool insertIntoLeaf(BPTreeNode *n, const int key);
     bool checkSplitSuccess(BPTreeNode *parent);
-    void splitRecursionUpLeaf(BPTreeNode *parent, int child_index,
-                              int additional);
+    void splitRecursionUpLeaf(BPTreeNode *parent, const int child_index,
+                              const int additional);
     void splitRecursionUpInternalNode(BPTreeNode *parent,
                                       BPTreeNode *child_node);
+    int getInsertPosition(BPTreeNode *n, const int key);
 
   public:
     BPTree();
@@ -125,7 +126,7 @@ BPTreeNode::BPTreeNode(BPTreeNode *parent) {
     }
 }
 
-BPTreeNode::BPTreeNode(int index) {
+BPTreeNode::BPTreeNode(const int index) {
     // this set the initial index
     // not for leaf nodes
     assert(ORDER > 1);
@@ -149,7 +150,23 @@ BPTree::BPTree() {
     this->root->is_root = true;
 }
 
-void BPTree::insert(int key) {
+int BPTree::getInsertPosition(BPTreeNode* n,const int key){
+    int less_than = n->fill_count();
+
+    // check where to insert
+    for (int i = n->fill_count() - 1; i >= 0; i--) {
+        cout << i << less_than;
+        if (key < this->root->getIndexes()[i]) {
+            less_than = i;
+        } else {
+            break;
+        }
+    }
+
+    return less_than;
+}
+
+void BPTree::insert(const int key) {
     // DEBUG
     call_depth++;
     const string msg = "key = " + to_string(key);
@@ -162,22 +179,14 @@ void BPTree::insert(int key) {
     assert(x != NULL);
     // root node is definitely not leaf
 
-    int less_than = this->root->fill_count();
+    const int insertPosition = getInsertPosition(x, key);
 
-    // check where to insert
-    for (int i = this->root->fill_count() - 1; i >= 0; i--) {
-        if (key < this->root->getIndexes()[i]) {
-            less_than = i;
-            break;
-        }
-    }
-
-    insertIntoChildren(this->root, less_than, key);
+    insertIntoChildren(this->root, insertPosition, key);
 
     call_depth--;
 }
 
-void BPTree::insertIntoChildren(BPTreeNode *n, int index, int key) {
+void BPTree::insertIntoChildren(BPTreeNode *n, const int index, const int key) {
     // DEBUG
     call_depth++;
     const string msg =
@@ -208,23 +217,15 @@ void BPTree::insertIntoChildren(BPTreeNode *n, int index, int key) {
         }
     } else {
         // not a leaf index, then find where to insert
-        int less_than = n->child_ptr[index]->fill_count();
-
-        // check where to insert
-        for (int i = n->child_ptr[index]->fill_count() - 1; i >= 0; i--) {
-            if (key < n->child_ptr[index]->getIndexes()[i]) {
-                less_than = i;
-                break;
-            }
-        }
-        insertIntoChildren(n->child_ptr[index], less_than, key);
+        const int insertPosition = getInsertPosition(n->child_ptr[index], key);
+        insertIntoChildren(n->child_ptr[index], insertPosition, key);
     }
 
     call_depth--;
 }
 
-void BPTree::splitRecursionUpLeaf(BPTreeNode *parent, int child_index,
-                                  int additional) {
+void BPTree::splitRecursionUpLeaf(BPTreeNode *parent,const int child_index,
+                                  const int additional) {
 
     // DEBUG
     call_depth++;
@@ -307,20 +308,10 @@ void BPTree::splitRecursionUpInternalNode(BPTreeNode *parent,
     }
 
     int index = child_node->getIndexes()[0];
-    int index_to_insert;
+    int insertPosition = getInsertPosition(parent, index);
 
-    int less_than = parent->fill_count();
-
-    // check where to insert
-    for (int i = parent->fill_count() - 1; i >= 0; i--) {
-        if (index < parent->getIndexes()[i]) {
-            less_than = i;
-            break;
-        }
-    }
-
-    // push the elements after less_than
-    parent->shiftAfterIndexAndInsertChild(less_than, child_node);
+    // push the elements after insertPosition
+    parent->shiftAfterIndexAndInsertChild(insertPosition, child_node);
 
     call_depth--;
 }
@@ -340,7 +331,7 @@ bool BPTree::checkSplitSuccess(BPTreeNode *parent) {
     call_depth--;
 }
 
-bool BPTree::insertIntoLeaf(BPTreeNode *n, int key) {
+bool BPTree::insertIntoLeaf(BPTreeNode *n, const int key) {
     // DEBUG
     call_depth++;
     const string msg = "key = " + to_string(key);
